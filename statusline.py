@@ -1,11 +1,15 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run
+# /// script
+# requires-python = ">=3.14"
+# dependencies = []
+# ///
 import sys
 import json
 import urllib.request
 import urllib.error
 import subprocess
 import platform
-from pathlib import Path
+import pathlib as pl
 
 # ANSI colors
 BLUE = "\033[34m"
@@ -18,7 +22,7 @@ RESET = "\033[0m"
 USAGE_API_URL = "https://api.anthropic.com/api/oauth/usage"
 USAGE_THRESHOLD_HIGH = 80
 USAGE_THRESHOLD_MEDIUM = 50
-CREDENTIALS_PATH = Path.home() / ".claude" / ".credentials.json"
+CREDENTIALS_PATH = pl.Path.home() / ".claude" / ".credentials.json"
 
 def main():
     try:
@@ -54,8 +58,10 @@ def get_access_token() -> str | None:
         return get_access_token_macos()
     elif system == "Linux":
         return get_access_token_linux()
+    elif system == "Windows":
+        return get_access_token_windows()
     else:
-        return None # Windows not supported
+        return None
 
 
 def get_access_token_macos() -> str | None:
@@ -79,6 +85,16 @@ def get_access_token_macos() -> str | None:
 
 def get_access_token_linux() -> str | None:
     """Read access token from credentials file on Linux."""
+    try:
+        with open(CREDENTIALS_PATH) as f:
+            creds = json.load(f)
+        return creds.get("claudeAiOauth", {}).get("accessToken")
+    except (FileNotFoundError, json.JSONDecodeError, KeyError):
+        return None
+
+
+def get_access_token_windows() -> str | None:
+    """Read access token from credentials file on Windows."""
     try:
         with open(CREDENTIALS_PATH) as f:
             creds = json.load(f)
